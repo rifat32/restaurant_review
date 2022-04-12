@@ -16,13 +16,14 @@ class Restaurant extends Model
         "Status",
         "Key_ID",
         "expiry_date",
+        "enable_question"
     ];
 
     public function owner() {
         return $this->hasOne(User::class,'id','OwnerID');
     }
     public function table() {
-        return $this->hasMany(RestaurantTable::class,'id','ResturantID');
+        return $this->hasMany(RestaurantTable::class,'id','restaurant_id');
     }
 
 }

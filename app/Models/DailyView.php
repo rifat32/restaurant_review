@@ -5,15 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RestaurantTable extends Model
+class DailyView extends Model
 {
     use HasFactory;
-  
     protected $fillable = [
-        "restaurant_id",
-        "status",
-        "table_no",
-        "order_id",
-
+        "view_date",
+        "daily_views",
+        "restaurant_id"
     ];
 }

@@ -25,6 +25,7 @@ class CreateRestaurantsTable extends Migration
             $table->integer("totalTables")->nullable();
             $table->string("Status")->nullable();
             $table->string("Layout")->nullable();
+            $table->boolean("enable_question");
             $table->timestamps();
         });
     }

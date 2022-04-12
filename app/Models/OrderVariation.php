@@ -5,15 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RestaurantTable extends Model
+class OrderVariation extends Model
 {
     use HasFactory;
-  
-    protected $fillable = [
-        "restaurant_id",
-        "status",
-        "table_no",
-        "order_id",
 
-    ];
+    protected $fillable = [
+        "order_id",
+        "dish_id",
+        "variation_id",
+     ];
+     public function variation() {
+        return $this->hasMany(Variation::class,"id","variation_id");
+    }
 }

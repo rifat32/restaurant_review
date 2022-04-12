@@ -5,15 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RestaurantTable extends Model
+class Notification extends Model
 {
     use HasFactory;
-  
     protected $fillable = [
-        "restaurant_id",
-        "status",
-        "table_no",
+        "reciever_id",
         "order_id",
-
+        "message",
+        "status"
     ];
 }

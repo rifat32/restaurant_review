@@ -9,41 +9,53 @@ use Illuminate\Support\Str;
 
 class RestaurantController extends Controller
 {
-    public function storeRestaurent($ownerId , Request $request) {
+    // ##################################################
+    // This method is to store restaurant
+    // ##################################################
+    public function storeRestaurent(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'Name' => 'required|unique:restaurants,Name',
             'Address' => 'required|string',
             'PostCode' => 'required',
+            'enable_question' => 'required',
         ]);
 
-
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors(), 422]);
+        }
         $validatedData = $validator->validated();
-        $validatedData["OwnerID"] = $ownerId;
+        $validatedData["OwnerID"] = $request->user()->id;
         $validatedData["Status"] = "Inactive";
 
         $validatedData["Key_ID"] = Str::random(10);
         $validatedData["expiry_date"] = Date('y:m:d', strtotime('+15 days'));
 
 
-
         $restaurant =  Restaurant::create($validatedData);
 
-        $data["restaurant"] = $restaurant;
-        return response(["ok" => true, "message" => "Restaurent Created successfully", "data" => $data], 200);
+
+        return response($restaurant, 200);
     }
 
-
-    public function uploadRestaurentImage($restaurentId, Request $request) {
+    // ##################################################
+    // This method is to upload restaurant image
+    // ##################################################
+    public function uploadRestaurentImage($restaurentId, Request $request)
+    {
 
         $request->validate([
 
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
 
         ]);
+        $checkRestaurant =    Restaurant::where(["id" => $restaurentId])->first();
+        if ($checkRestaurant->OwnerID != $request->user()->id && !$request->user()->hasRole("superadmin")) {
+            return response()->json(["message" => "This is not your restaurant", 401]);
+        }
 
 
-
-        $imageName = time().'.'.$request->logo->extension();
+        $imageName = time() . '.' . $request->logo->extension();
 
 
 
@@ -54,98 +66,117 @@ class RestaurantController extends Controller
         $data["restaurent"] =    tap(Restaurant::where(["id" => $restaurentId]))->update([
             "Logo" => $imageName
         ])
-        // ->with("somthing")
+            // ->with("somthing")
 
-        ->first();
+            ->first();
 
 
-        if(!$data["restaurent"]){
-            return response()->json(["message" =>"No User Found"], 404);
+        if (!$data["restaurent"]) {
+            return response()->json(["message" => "No User Found"], 404);
         }
 
-      $data["message"] = "restaurant image updates successfully" ;
+        $data["message"] = "restaurant image updates successfully";
         return response()->json($data, 200);
-
-
     }
+    // ##################################################
+    // This method is to update restaurant details
+    // ##################################################
+    public function UpdateResturantDetails($restaurentId, Request $request)
+    {
 
-    public function UpdateResturantDetails($restaurentId,Request $request) {
 
+        $checkRestaurant =    Restaurant::where(["id" => $restaurentId])->first();
+
+        if ($checkRestaurant->OwnerID != $request->user()->id && !$request->user()->hasRole("superadmin")) {
+            return response()->json(["message" => "This is not your restaurant", 401]);
+        }
         $data["restaurant"] =    tap(Restaurant::where(["id" => $restaurentId]))->update($request->only(
             "Name",
             "Layout",
             "Address",
-             "PostCode",
+            "PostCode",
+            "enable_question"
         ))
-        // ->with("somthing")
+            // ->with("somthing")
 
-        ->first();
+            ->first();
 
 
-        if(!$data["restaurant"]){
-            return response()->json(["message" =>"No Restaurant Found"], 404);
+        if (!$data["restaurant"]) {
+            return response()->json(["message" => "No Restaurant Found"], 404);
         }
 
 
-      $data["message"] = "Restaurant updates successfully" ;
+        $data["message"] = "Restaurant updates successfully";
         return response()->json($data, 200);
-
     }
-
-    public function UpdateResturantDetailsByAdmin($restaurentId,Request $request) {
-
+    // ##################################################
+    // This method is to update restaurant details by admin
+    // ##################################################
+    public function UpdateResturantDetailsByAdmin($restaurentId, Request $request)
+    {
+        $checkRestaurant =    Restaurant::where(["id" => $restaurentId])->first();
+        if ($checkRestaurant->OwnerID != $request->user()->id && !$request->user()->hasRole("superadmin")) {
+            return response()->json(["message" => "This is not your restaurant", 401]);
+        }
 
         $data["restaurant"] =    tap(Restaurant::where(["id" => $restaurentId]))->update($request->only(
             "Name",
             "Layout",
             "Address",
             "PostCode",
-            "expiry_date"
+            "expiry_date",
+            "enable_question"
         ))
-        // ->with("somthing")
+            // ->with("somthing")
 
-        ->first();
+            ->first();
 
 
-        if(!$data["restaurant"]){
-            return response()->json(["message" =>"No Restaurant Found"], 404);
+        if (!$data["restaurant"]) {
+            return response()->json(["message" => "No Restaurant Found"], 404);
         }
 
 
-      $data["message"] = "Restaurant updates successfully" ;
+        $data["message"] = "Restaurant updates successfully";
         return response()->json($data, 200);
     }
-
-    public function getrestaurantById($restaurantId){
+    // ##################################################
+    // This method is to get restaurant by id
+    // ##################################################
+    public function getrestaurantById($restaurantId)
+    {
         $data["restaurant"] =   Restaurant::with("owner")->where(["id" => $restaurantId])->first();
         $data["ok"] = true;
 
-        if(!$data["restaurant"]) {
-  return response([ "message" => "No Restaurant Found"], 404);
+        if (!$data["restaurant"]) {
+            return response(["message" => "No Restaurant Found"], 404);
         }
         return response($data, 200);
-
     }
-    public function getAllRestaurants(){
+    // ##################################################
+    // This method is to get restaurant all
+    // ##################################################
+    public function getAllRestaurants()
+    {
         $data["restaurant"] =   Restaurant::with("owner")->get();
         $data["ok"] = true;
-//         if(!$data["restaurant"]) {
-//   return response([ "message" => "No Restaurant Found"], 404);
-//         }
+        //         if(!$data["restaurant"]) {
+        //   return response([ "message" => "No Restaurant Found"], 404);
+        //         }
         return response($data, 200);
-
     }
-    public function getrestaurantTableByRestaurantId($restaurantId){
-        $data["restaurant"] =   Restaurant::with("owner","table")->where(["id" => $restaurantId])->first();
+    // ##################################################
+    // This method is to get restaurant table by restaurant id
+    // ##################################################
+    public function getrestaurantTableByRestaurantId($restaurantId)
+    {
+        $data["restaurant"] =   Restaurant::with("owner", "table")->where(["id" => $restaurantId])->first();
         $data["ok"] = true;
 
-        if(!$data["restaurant"]) {
-  return response([ "message" => "No Restaurant Found"], 404);
+        if (!$data["restaurant"]) {
+            return response(["message" => "No Restaurant Found"], 404);
         }
         return response($data, 200);
-
     }
-
-
-
 }

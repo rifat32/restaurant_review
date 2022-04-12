@@ -8,10 +8,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class OwnerController extends Controller
 {
-    public function createUser(Request $request) {
+    // ##################################################
+    // This method is to store user
+    // ##################################################
+    public function createUser(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
             'email' => 'email|required|unique:users,email',
@@ -29,9 +34,49 @@ class OwnerController extends Controller
         $token = $user->createToken('Laravel Password Grant Client')->accessToken;
         $data["user"] = $user;
         return response(["ok" => true, "message" => "You have successfully registered", "data" => $data, "token" => $token], 200);
-
     }
-    public function createUser2(Request $request) {
+    // ##################################################
+    // This method is to store super admin
+    // ##################################################
+    public function createsuperAdmin(Request $request)
+    {
+
+
+        $validator = Validator::make($request->all(), [
+            'email' => 'email|required|unique:users,email',
+            'password' => 'required|string|min:6',
+            'first_Name' => 'required',
+            'phone' => 'nullable',
+            'last_Name' => 'nullable'
+        ]);
+
+        $validatedData = $validator->validated();
+
+        $validatedData['password'] = Hash::make($validatedData['password']);
+        $validatedData['remember_token'] = Str::random(10);
+        $user =  User::create($validatedData);
+        $token = $user->createToken('Laravel Password Grant Client')->accessToken;
+        $data["user"] = $user;
+        if (!Role::where(['name' => 'superadmin'])->exists()) {
+            Role::create(['name' => 'superadmin']);
+        }
+        $user->assignRole('superadmin');
+        return response(["ok" => true, "message" => "You have successfully registered", "data" => $data, "token" => $token], 200);
+    }
+    // ##################################################
+    // This method is to get role
+    // ##################################################
+    public function getRole(Request $request)
+    {
+
+
+        return response()->json($request->user()->getRoleNames());
+    }
+    // ##################################################
+    // This method is to store user2
+    // ##################################################
+    public function createUser2(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
             'email' => 'email|required|unique:users,email',
@@ -48,9 +93,12 @@ class OwnerController extends Controller
         $token = $user->createToken('Laravel Password Grant Client')->accessToken;
         $data["user"] = $user;
         return response(["ok" => true, "message" => "You have successfully registered", "data" => $data, "token" => $token], 200);
-
     }
-    public function createGuestUser(Request $request) {
+    // ##################################################
+    // This method is to store guest user
+    // ##################################################
+    public function createGuestUser(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
             'email' => 'email|required|unique:users,email',
@@ -60,7 +108,7 @@ class OwnerController extends Controller
         ]);
 
         $validatedData = $validator->validated();
-// password is not need
+        // password is not need
         // $validatedData['password'] = Hash::make($request['password']);
 
         $validatedData['remember_token'] = Str::random(10);
@@ -68,9 +116,12 @@ class OwnerController extends Controller
         $token = $user->createToken('Laravel Password Grant Client')->accessToken;
         $data["user"] = $user;
         return response(["ok" => true, "message" => "You have successfully registered", "data" => $data, "token" => $token], 200);
-
     }
-    public function createStaffUser($restaurantId,Request $request) {
+    // ##################################################
+    // This method is to store stalf
+    // ##################################################
+    public function createStaffUser($restaurantId, Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
             'email' => 'email|required|unique:users,email',
@@ -82,9 +133,9 @@ class OwnerController extends Controller
 
         $validatedData = $validator->validated();
 
-  if(array_key_exists('password',$validatedData)) {
-    $validatedData['password'] = Hash::make($validatedData['password']);
-  }
+        if (array_key_exists('password', $validatedData)) {
+            $validatedData['password'] = Hash::make($validatedData['password']);
+        }
 
         $validatedData['remember_token'] = Str::random(10);
         $user =  User::create($validatedData);
@@ -101,12 +152,16 @@ class OwnerController extends Controller
 
 
 
-        return response(["ok" => true, "message" => "Staff Added Successfully", "data" => $data,
-        // "token" => $token
-    ], 200);
-
+        return response([
+            "ok" => true, "message" => "Staff Added Successfully", "data" => $data,
+            // "token" => $token
+        ], 200);
     }
-    public function updatePin($id,Request $request) {
+    // ##################################################
+    // This method is to update pin
+    // ##################################################
+    public function updatePin($id, Request $request)
+    {
         $validator = Validator::make($request->all(), [
 
             'pin' => 'required',
@@ -115,68 +170,81 @@ class OwnerController extends Controller
 
         $validatedData = $validator->validated();
         User::where(["id" => $id])
-        ->update([
-            "pin" => $validatedData["pin"]
-        ]);
+            ->update([
+                "pin" => $validatedData["pin"]
+            ]);
         return response(["ok" => true, "message" => "Pin Updated Successfully."], 200);
     }
 
-
-    public function getOwnerById($id){
+    // ##################################################
+    // This method is to get user by id
+    // ##################################################
+    public function getOwnerById($id)
+    {
         $data["user"] =   User::where(["id" => $id])->first();
         $data["ok"] = true;
 
-        if(!$data["user"]) {
-  return response([ "message" => "No User Found"], 404);
+        if (!$data["user"]) {
+            return response(["message" => "No User Found"], 404);
         }
         return response($data, 200);
-
     }
-
-    public function getOwnerNotHaveRestaurent(){
+    // ##################################################
+    // This method is to get user not havhing restaurant
+    // ##################################################
+    public function getOwnerNotHaveRestaurent()
+    {
 
 
         // @@@@@@@@@@
-// where not in restaurent select id
+        // where not in restaurent select id
 
-        $data["user"] =      USER::whereNotIn('id', [ 2, 3])->get();
+        $data["user"] =      USER::whereNotIn('id', [2, 3])->get();
         $data["ok"] = true;
         return response($data, 200);
-
     }
-
-    public function getOwnerByPhoneNumber($phoneNumber){
+    // ##################################################
+    // This method is to get user by phone number
+    // ##################################################
+    public function getOwnerByPhoneNumber($phoneNumber)
+    {
         $data["user"] =   User::where(["phone" => $phoneNumber])->first();
         $data["ok"] = true;
-        if(!$data["user"]) {
-            return response([ "message" => "No User Found"], 404);
-            }
+        if (!$data["user"]) {
+            return response(["message" => "No User Found"], 404);
+        }
         return response($data, 200);
-
     }
+    // ##################################################
+    // This method is to update user
+    // ##################################################
+    public function updateUser($userId, Request $request)
+    {
 
-    public function updateUser($userId,Request $request) {
-
-     $data["user"] =    tap(User::where(["id" => $userId]))->update($request->only(
+        $data["user"] =    tap(User::where(["id" => $userId]))->update($request->only(
             "first_Name",
             "last_Name",
             "phone",
             "Address",
-    ))
-        // ->with("somthing")
+        ))
+            // ->with("somthing")
 
-        ->first();
+            ->first();
 
 
-        if(!$data["user"]){
-            return response()->json(["message" =>"No User Found"], 404);
+        if (!$data["user"]) {
+            return response()->json(["message" => "No User Found"], 404);
         }
 
 
-      $data["message"] = "user updates successfully" ;
+        $data["message"] = "user updates successfully";
         return response()->json($data, 200);
     }
-    public function updateImage($userId, Request $request) {
+    // ##################################################
+    // This method is to update  user image
+    // ##################################################
+    public function updateImage($userId, Request $request)
+    {
         $request->validate([
 
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -185,7 +253,7 @@ class OwnerController extends Controller
 
 
 
-        $imageName = time().'.'.$request->logo->extension();
+        $imageName = time() . '.' . $request->logo->extension();
 
 
 
@@ -196,24 +264,17 @@ class OwnerController extends Controller
         $data["user"] =    tap(User::where(["id" => $userId]))->update([
             "image" => $imageName
         ])
-        // ->with("somthing")
+            // ->with("somthing")
 
-        ->first();
+            ->first();
 
 
-        if(!$data["user"]){
-            return response()->json(["message" =>"No User Found"], 404);
+        if (!$data["user"]) {
+            return response()->json(["message" => "No User Found"], 404);
         }
 
 
-      $data["message"] = "image updates successfully" ;
+        $data["message"] = "image updates successfully";
         return response()->json($data, 200);
-
     }
-
-
-
-
-
-
 }
